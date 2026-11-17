@@ -1,0 +1,148 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import { IconBot, IconClose, IconSend, IconTrendingUp, IconBarChart, IconTax } from './Icons';
+import './ChatWidget.css';
+
+const API_URL = 'http://localhost:8000';
+
+const ChatWidget = () => {
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  if (!user) return null;
+
+  const sendMessage = async (text) => {
+    if (!text.trim()) return;
+
+    const userMessage = { role: 'user', content: text, timestamp: new Date() };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API_URL}/chatbot/query`, {
+        query: text,
+        conversation_history: messages.slice(-10).map(m => ({
+          role: m.role,
+          content: m.content
+        }))
+      });
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: response.data.response,
+        timestamp: new Date()
+      }]);
+    } catch (error) {
+      console.error('Chat Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'I am having trouble connecting to my advisory engine right now. Please try again in a moment.',
+        timestamp: new Date()
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  return (
+    <>
+      {/* Floating Button */}
+      <button
+        className={`chat-fab ${isOpen ? 'open' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        title="AI Financial Assistant"
+      >
+        {isOpen ? <IconClose size={20} color="#fff" /> : <IconBot size={22} color="#fff" />}
+      </button>
+
+      {/* Chat Panel */}
+      {isOpen && (
+        <div className="chat-widget">
+          <div className="chat-widget-header">
+            <div className="chat-widget-title">
+              <span className="chat-widget-icon">
+                <IconBot size={18} color="#818cf8" />
+              </span>
+              <div>
+                <h4>Pocket Buddy AI</h4>
+                <span className="chat-widget-status">Online</span>
+              </div>
+            </div>
+            <button className="chat-widget-close" onClick={() => setIsOpen(false)}>
+              <IconClose size={16} />
+            </button>
+          </div>
+
+          <div className="chat-widget-messages">
+            {messages.length === 0 && (
+              <div className="chat-widget-welcome">
+                <p>Hello {user?.full_name?.split(' ')[0]}!</p>
+                <p>How can I assist with your financial strategy today?</p>
+                <div className="chat-widget-chips">
+                  <button onClick={() => sendMessage('Best investment options?')}>
+                    <IconTrendingUp size={13} />
+                    <span>Investments</span>
+                  </button>
+                  <button onClick={() => sendMessage('How should I start a SIP?')}>
+                    <IconBarChart size={13} />
+                    <span>SIP Planning</span>
+                  </button>
+                  <button onClick={() => sendMessage('Tax saving tips')}>
+                    <IconTax size={13} />
+                    <span>Tax Optimization</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            {messages.map((msg, i) => (
+              <div key={i} className={`chat-widget-msg ${msg.role}`}>
+                <div className="chat-widget-bubble">{msg.content}</div>
+              </div>
+            ))}
+            {loading && (
+              <div className="chat-widget-msg assistant">
+                <div className="chat-widget-bubble">
+                  <div className="chat-widget-typing">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <form className="chat-widget-input" onSubmit={handleSubmit}>
+            <input
+              type="text"
+              placeholder="Ask a financial question..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={loading}
+            />
+            <button type="submit" disabled={loading || !input.trim()}>
+              <IconSend size={15} />
+            </button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default ChatWidget;
+

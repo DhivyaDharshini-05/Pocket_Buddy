@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+backend/.env
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage/
+
+# IDEs
+.vscode/
+.idea/
+.claude/
+.gemini/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+frontend/build/
+
+# Frontend Env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Prompts
+Masterprompt.txt
+# All environment files and secrets
+.env*
+**/.env*
+# Environment files and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
